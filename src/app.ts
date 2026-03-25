@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Basic health check route
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to the Node with AI CRUD API!" });
+  res.json({ message: "Welcome to the Node with AI CRUD API! UPDATED" });
 });
 
 // Routes
