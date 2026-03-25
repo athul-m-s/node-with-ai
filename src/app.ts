@@ -18,7 +18,17 @@ connectDB();
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://kind-pebble-077b9e310.2.azurestaticapps.net", // Production frontend
+      "http://localhost:4200", // Angular local dev
+      // "http://localhost:3000", // React/Next local dev
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+  }),
+);
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
