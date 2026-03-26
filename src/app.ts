@@ -22,7 +22,7 @@ validateEnv();
 const app = express();
 
 // Trust reverse proxy for rate limiting (e.g., Azure App Service, Nginx)
-// app.set("trust proxy", 1);
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB
@@ -42,8 +42,8 @@ app.use(
   }),
 );
 app.use(compression());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
 // Data sanitization against NoSQL query injection
 // We invoke sanitize manually because express-mongo-sanitize attempts to re-assign req.query, which throws an error in Express 5+
@@ -85,8 +85,20 @@ app.use(
     res: express.Response,
     next: express.NextFunction,
   ) => {
+    // Always log the full error internally
     console.error(err.stack);
-    res.status(500).json({ message: "Internal Server Error" });
+
+    const statusCode = err.statusCode || 500;
+
+    // Never leak stack traces or internal messages in production
+    const message =
+      process.env.NODE_ENV === "production"
+        ? statusCode === 500
+          ? "Internal Server Error"
+          : err.message
+        : err.message || "Internal Server Error";
+
+    res.status(statusCode).json({ message });
   },
 );
 

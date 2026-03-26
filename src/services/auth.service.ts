@@ -36,15 +36,32 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    // +password because it's select:false in schema
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
       throw new Error("Invalid email or password");
     }
 
+    if (user.isLocked) {
+      throw new Error(
+        "Account is temporarily locked due to multiple failed login attempts. Please try again after 15 minutes.",
+      );
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      user.failedLoginAttempts += 1;
+      if (user.failedLoginAttempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes lock
+      }
+      await user.save();
       throw new Error("Invalid email or password");
+    }
+
+    // Reset login attempts on successful login
+    if (user.failedLoginAttempts > 0 || user.lockUntil) {
+      user.failedLoginAttempts = 0;
+      user.lockUntil = null as any;
+      await user.save();
     }
 
     const userId = (user._id as mongoose.Types.ObjectId).toString();

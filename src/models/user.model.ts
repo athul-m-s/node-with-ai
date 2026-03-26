@@ -6,6 +6,9 @@ export interface IUser extends Document {
   email: string;
   age: number;
   password: string;
+  failedLoginAttempts: number;
+  lockUntil?: Date | null;
+  isLocked: boolean;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -15,11 +18,17 @@ const userSchema: Schema<IUser> = new Schema(
     email: { type: String, required: true, unique: true },
     age: { type: Number, required: true },
     password: { type: String, required: true, select: false },
+    failedLoginAttempts: { type: Number, required: true, default: 0 },
+    lockUntil: { type: Date },
   },
   {
     timestamps: true,
   },
 );
+
+userSchema.virtual("isLocked").get(function () {
+  return !!(this.lockUntil && this.lockUntil > new Date());
+});
 
 // Hash password before saving (Mongoose v7+ async pre-hook, no next callback needed)
 userSchema.pre("save", async function () {

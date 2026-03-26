@@ -7,15 +7,17 @@ export class UserService {
   }
 
   async getUsers() {
-    return await User.find();
+    return await User.find().select("-password");
   }
 
   async getUserById(id: string) {
-    return await User.findById(id);
+    return await User.findById(id).select("-password");
   }
 
   async updateUser(id: string, userData: Partial<IUser>) {
-    return await User.findByIdAndUpdate(id, userData, { new: true });
+    return await User.findByIdAndUpdate(id, userData, { new: true }).select(
+      "-password",
+    );
   }
 
   async deleteUser(id: string) {
