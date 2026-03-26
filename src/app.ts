@@ -9,6 +9,7 @@ import morgan from "morgan";
 import { validateEnv } from "./config/env.js";
 import { connectDB } from "./config/db.js";
 import { apiRateLimiter } from "./middleware/rate-limit.middleware.js";
+import { errorHandler } from "./middleware/error.middleware.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
@@ -78,29 +79,7 @@ app.use("/api/users", userRoutes); // Protected: JWT required
 app.use("/api/products", productRoutes); // Protected: JWT required
 
 // Error handling middleware
-app.use(
-  (
-    err: any,
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
-  ) => {
-    // Always log the full error internally
-    console.error(err.stack);
-
-    const statusCode = err.statusCode || 500;
-
-    // Never leak stack traces or internal messages in production
-    const message =
-      process.env.NODE_ENV === "production"
-        ? statusCode === 500
-          ? "Internal Server Error"
-          : err.message
-        : err.message || "Internal Server Error";
-
-    res.status(statusCode).json({ message });
-  },
-);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
