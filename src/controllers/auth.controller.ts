@@ -1,23 +1,16 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/auth.service.js";
+import type { RegisterInput, LoginInput } from "../schemas/auth.schema.js";
 
 const authService = new AuthService();
 
-export const register = async (req: Request, res: Response): Promise<void> => {
+export const register = async (
+  req: Request<{}, {}, RegisterInput>,
+  res: Response,
+): Promise<void> => {
   try {
-    const { name, email, age, password } = req.body;
-
-    if (!name || !email || !age || !password) {
-      res.status(400).json({ message: "name, email, age, and password are required" });
-      return;
-    }
-
-    if (password.length < 8) {
-      res.status(400).json({ message: "Password must be at least 8 characters" });
-      return;
-    }
-
-    const result = await authService.register({ name, email, age, password });
+    // req.body is already validated & sanitized by the validate middleware
+    const result = await authService.register(req.body);
     res.status(201).json({
       message: "User registered successfully",
       ...result,
@@ -28,16 +21,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = async (
+  req: Request<{}, {}, LoginInput>,
+  res: Response,
+): Promise<void> => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      res.status(400).json({ message: "email and password are required" });
-      return;
-    }
-
-    const result = await authService.login(email, password);
+    // req.body is already validated & sanitized by the validate middleware
+    const result = await authService.login(req.body.email, req.body.password);
     res.json({
       message: "Login successful",
       ...result,

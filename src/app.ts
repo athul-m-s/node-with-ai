@@ -4,6 +4,7 @@ import helmet from "helmet";
 import compression from "compression";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
+import { apiRateLimiter } from "./middleware/rate-limit.middleware.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
@@ -33,6 +34,9 @@ app.use(
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Global rate limiter: 100 requests per 15 min per IP
+app.use(apiRateLimiter);
 
 // Basic health check route
 app.get("/", (req, res) => {
