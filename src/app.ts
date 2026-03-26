@@ -4,6 +4,7 @@ import helmet from "helmet";
 import compression from "compression";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
+import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
 
@@ -39,8 +40,9 @@ app.get("/", (req, res) => {
 });
 
 // Routes
-app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes);
+app.use("/api/auth", authRoutes);       // Public: register & login
+app.use("/api/users", userRoutes);      // Protected: JWT required
+app.use("/api/products", productRoutes); // Protected: JWT required
 
 // Error handling middleware
 app.use(
