@@ -3,6 +3,10 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import dotenv from "dotenv";
+import mongoSanitize from "express-mongo-sanitize";
+import hpp from "hpp";
+import morgan from "morgan";
+import { validateEnv } from "./config/env.js";
 import { connectDB } from "./config/db.js";
 import { apiRateLimiter } from "./middleware/rate-limit.middleware.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -12,7 +16,13 @@ import productRoutes from "./routes/product.routes.js";
 // Load environment variables
 dotenv.config();
 
+// Validate environment variables before proceeding
+validateEnv();
+
 const app = express();
+
+// Trust reverse proxy for rate limiting (e.g., Azure App Service, Nginx)
+// app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB
@@ -35,6 +45,25 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Data sanitization against NoSQL query injection
+// We invoke sanitize manually because express-mongo-sanitize attempts to re-assign req.query, which throws an error in Express 5+
+app.use((req, res, next) => {
+  if (req.body) mongoSanitize.sanitize(req.body);
+  if (req.query) mongoSanitize.sanitize(req.query);
+  if (req.params) mongoSanitize.sanitize(req.params);
+  next();
+});
+
+// Prevent HTTP Parameter Pollution
+app.use(hpp());
+
+// HTTP request logging
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+} else {
+  app.use(morgan("combined"));
+}
+
 // Global rate limiter: 100 requests per 15 min per IP
 app.use(apiRateLimiter);
 
@@ -44,8 +73,8 @@ app.get("/", (req, res) => {
 });
 
 // Routes
-app.use("/api/auth", authRoutes);       // Public: register & login
-app.use("/api/users", userRoutes);      // Protected: JWT required
+app.use("/api/auth", authRoutes); // Public: register & login
+app.use("/api/users", userRoutes); // Protected: JWT required
 app.use("/api/products", productRoutes); // Protected: JWT required
 
 // Error handling middleware
