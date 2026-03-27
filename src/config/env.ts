@@ -23,8 +23,8 @@ export const validateEnv = () => {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("Environment validation failed:");
-      (error as any).errors.forEach((err: any) => {
-        console.error(`  - ${err.path.join(".")}: ${err.message}`);
+      error.issues.forEach((issue) => {
+        console.error(`  - ${issue.path.join(".")}: ${issue.message}`);
       });
     } else {
       console.error("Unexpected error during environment validation:", error);
